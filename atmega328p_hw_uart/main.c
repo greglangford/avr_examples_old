@@ -37,7 +37,7 @@ unsigned char uart_getchar() {
 
 void uart_getstring(unsigned char *str) {
   memset(rxbuf, 0, sizeof(rxbuf));  /* clear rxbuf */
-  while(rxbuf_ready != 1);          /* wait until rxbuf_ready */
+  while(!rxbuf_ready);          /* wait until rxbuf_ready */
   strcpy(str, rxbuf);               /* copy rxbuf to pointer */
   rxbuf_ready = 0;                  /* reset ready */
 }
