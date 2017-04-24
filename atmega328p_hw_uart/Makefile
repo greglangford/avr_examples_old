@@ -6,7 +6,7 @@ HEXFILE = main.hex
 ELFFILE = main.elf
 
 flash: hex
-	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB4 -b 57600 -U flash:w:$(HEXFILE)
+	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB0 -b 57600 -U flash:w:$(HEXFILE)
 
 hex: link
 	avr-objcopy -j .text -j .data -O ihex $(ELFFILE) $(HEXFILE)
