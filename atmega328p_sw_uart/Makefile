@@ -1,18 +1,30 @@
 CC = avr-gcc
-CFLAGS = -g -Os -mmcu=atmega328 -c
+CFLAGS = -g -Os -mmcu=atmega328 -c -I./include
 LINKERFLAGS = -g -mmcu=atmega328
 
-HEXFILE = main.hex
-ELFFILE = main.elf
+NAME = flash
+ELFFILE = $(NAME).elf
+HEXFILE = $(NAME).hex
 
-flash: hex
+SOURCES = $(wildcard *.c)
+OBJECTS = $(SOURCES:.c=.o)
+
+$(HEXFILE): $(ELFFILE)
+	avr-objcopy -j .text -j .data -O ihex $< $@
+
+$(ELFFILE): $(OBJECTS)
+	$(CC) $(LINKERFLAGS) $(OBJECTS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $< -o $@
+
+test: flash clean
+	picocom /dev/ttyUSB0 -b 9600
+
+flash: $(HEXFILE)
 	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB0 -b 57600 -U flash:w:$(HEXFILE)
 
-hex: link
-	avr-objcopy -j .text -j .data -O ihex $(ELFFILE) $(HEXFILE)
+.PHONY: clean
 
-link: main.o
-	$(CC) $(LINKERFLAGS) -o $(ELFFILE) main.o
-
-main.o: main.c
-	$(CC) $(CFLAGS) -o main.o main.c
+clean:
+	rm -rf *.o *.hex *.elf
