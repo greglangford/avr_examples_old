@@ -22,7 +22,7 @@ test: flash clean
 	picocom /dev/ttyUSB0 -b 9600
 
 flash: $(HEXFILE)
-	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB0 -b 57600 -U flash:w:$(HEXFILE)
+	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB1 -b 57600 -U flash:w:$(HEXFILE)
 
 .PHONY: clean
 
