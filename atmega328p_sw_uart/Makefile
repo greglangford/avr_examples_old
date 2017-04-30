@@ -1,6 +1,6 @@
 CC = avr-gcc
-CFLAGS = -g -Os -mmcu=atmega328 -c -I./include
-LINKERFLAGS = -g -mmcu=atmega328
+CFLAGS = -g -Os -mmcu=atmega328 -c -I./include -Wl,-u,vfprintf -lprintf_flt -lm
+LINKERFLAGS = -g -mmcu=atmega328 -Wl,-u,vfprintf -lprintf_flt -lm
 
 NAME = flash
 ELFFILE = $(NAME).elf
@@ -22,7 +22,7 @@ test: flash clean
 	picocom /dev/ttyUSB0 -b 9600
 
 flash: $(HEXFILE)
-	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB1 -b 57600 -U flash:w:$(HEXFILE)
+	avrdude -F -V -c stk500v1 -p m328p -P /dev/ttyUSB0 -b 57600 -U flash:w:$(HEXFILE)
 
 .PHONY: clean
 

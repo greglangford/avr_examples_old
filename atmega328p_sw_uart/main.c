@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "sw_uart_tx.h"
+#include <stdio.h>
 
 void MASTER_TX() {
   DDRB |= _BV(PB1);
@@ -19,6 +20,34 @@ void BUS_LOW() {
   PORTB &= ~_BV(PB1);
 }
 
+uint8_t read_bit() {
+  int bit = 0;
+
+  MASTER_TX();
+  BUS_LOW();
+  _delay_us(1);
+  MASTER_RX();
+
+  if(bit_is_set(PINB, PB1)) {
+    bit = 1;
+  }
+
+  _delay_us(59);
+
+  return bit;
+}
+
+uint8_t read_byte() {
+  int i, byte;
+  byte = 0;
+
+  for(i = 0; i < 8; i++) {
+    byte |= read_bit() << i;
+  }
+
+  return byte;
+}
+
 void write_bit(uint8_t bit) {
   MASTER_TX();
   BUS_LOW();
@@ -31,31 +60,6 @@ void write_bit(uint8_t bit) {
   _delay_us(59);
   MASTER_RX();
   _delay_us(1);
-}
-
-void read() {
-  unsigned char c;
-  int i;
-
-  for(i = 0; i < 12; i++) {
-    MASTER_TX();
-    BUS_LOW();
-    _delay_us(1);
-
-    MASTER_RX();
-    _delay_us(10);
-
-    if(bit_is_set(PINB, PB1)) {
-      c = '1';
-    } else {
-      c = '0';
-    }
-
-    _delay_us(50);
-
-    sw_uart_tx_putchar(c);
-  }
-
 }
 
 void write(unsigned char c) {
@@ -93,23 +97,46 @@ void issue_reset() {
   PORTB |= _BV(PB1);    /* pull PB1 high */
 }
 
+float read_temp() {
+  float temp = 0;
+  char temp1 = 0, temp2 = 0;
+
+  temp1 = read_byte();
+  temp2 = read_byte();
+  issue_reset();
+
+  temp = (float) (temp1+temp2);
+  return temp;
+}
+
 void main() {
+  float temp;
+  char buf[50];
   sw_uart_tx_init();
 
+  sw_uart_tx_putstring("Starting up...\r\n");
+
   while(1) {
+
+    /* DS18B20 start */
     issue_reset();
     detect_presence();
     write(0xCC);
     write(0x44);
+    _delay_ms(1000);
     issue_reset();
     detect_presence();
     write(0xCC);
     write(0xBE);
-    read();
 
-    unsigned char *c = "\r\n";
+    temp = 0;
+    temp = read_temp();
 
-    sw_uart_tx_putstring(c);
-    _delay_ms(5000);
+    memset(buf, 0, sizeof(buf));
+    sprintf(buf, "Temperature: %.2f\r\n", temp);
+
+    sw_uart_tx_putstring(buf);
+
+    _delay_ms(1000);
   }
 }

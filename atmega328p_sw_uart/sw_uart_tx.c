@@ -32,7 +32,7 @@ void sw_uart_tx_putchar(unsigned char c) {
 }
 
 void sw_uart_tx_putstring(unsigned char *str) {
-  while(*str) {
+  while(*str != '\0') {
     sw_uart_tx_putchar(*str++);
   }
 }
