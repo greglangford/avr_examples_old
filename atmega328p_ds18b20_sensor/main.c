@@ -10,6 +10,8 @@ void main() {
   char buf[50];
   uint8_t byte1, byte2;
 
+  float temp1;
+
   int16_t temp;
   uart_init();
 
@@ -26,9 +28,12 @@ void main() {
   byte1 = onewire_read_byte();
   byte2 = onewire_read_byte();
 
-  temp = (((int16_t) byte2) << 11) | (((int16_t) byte1) << 3);
+  //temp = (((int16_t) byte2) << 11) | (((int16_t) byte1) << 3);
 
-  sprintf(buf, "%2.2f\r\n", (float) temp * 0.0078125);
+  temp1 = ((byte2 << 8) | byte1);
+  temp1 /= 16;
+
+  sprintf(buf, "%2.2f\r\n", temp1);
 
   uart_putstring(buf);
 
