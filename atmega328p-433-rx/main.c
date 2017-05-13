@@ -22,7 +22,6 @@ void main() {
   DDRC = 0xFF;
 
   ADMUX |= _BV(REFS0);
-  ADMUX &= ~_BV(REFS1);
 
   ADCSRA |= _BV(ADPS1) | _BV(ADPS2) | _BV(ADPS0) | _BV(ADEN) | _BV(ADIE);
 
@@ -35,12 +34,11 @@ void main() {
 
   while(1) {
 
-    while((read = analogRead()) < 545);
+    read = analogRead();
 
     memset(buf, 0, sizeof(buf));
     sprintf(buf, "Complete: %d\r\n", read);
 
     hw_uart_putstring(buf);
-    _delay_ms(50);
   }
 }
