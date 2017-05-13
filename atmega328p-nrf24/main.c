@@ -7,22 +7,23 @@
 #include <string.h>
 
 void main() {
-  char c;
-  char str[50];
+  int i;
+  char val[5];
+  char *ptrval = val;
 
-  hw_uart_init();
-  nrf24_init();
+  char debug[100];
+
+  hw_uart_init();     // Init hardware uart
+  nrf24_init();       // Init nrf24
+
+  nrf24_read_reg(NRF24_RX_P0_PAYLOAD_WIDTH, ptrval, 5);
+
+  sprintf(debug, "[%02x] [%02x] [%02x] [%02x] [%02x]\r\n", val[0], val[1], val[2], val[3], val[4]);
+
+  hw_uart_putstring(debug);
 
   while(1) {
 
-    c = nrf24_read(0x00 + 0x07);
-
-    memset(str, 0, sizeof(str));
-    sprintf(str, "Char: %02x\r\n", c);
-
-    hw_uart_putstring(str);
-
-    _delay_ms(5000);
   }
 
 }
