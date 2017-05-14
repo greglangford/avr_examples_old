@@ -21,7 +21,7 @@ void nrf24_init() {
   rx_addr[3] = 0x12;
   rx_addr[4] = 0x12;
 
-  val[0] = 0x01;
+  val[0] = 0x00;
   nrf24_write_reg(NRF24_AUTO_ACK, val, 1);            // Auto Acknowledge
 
   val[0] = 0x01;
@@ -39,7 +39,7 @@ void nrf24_init() {
   nrf24_write_reg(NRF24_RX_ADDR_P0, rx_addr, 5);       // RX Address Pipe 0
   nrf24_write_reg(NRF24_TX_ADDR, rx_addr, 5);          // TX Address
 
-  val[0] = 0x20;
+  val[0] = 0x5;
   nrf24_write_reg(NRF24_RX_P0_PAYLOAD_WIDTH, val, 1); // Payload Size 32 Bytes
 
   val[0] = 0x1E;
@@ -81,5 +81,25 @@ void nrf24_read_reg(char reg, char *val, char size) {
     _delay_us(10);
   }
 
-  NRF24_PORT |= _BV(10);
+  NRF24_PORT |= _BV(NRF24_CSN);
+}
+
+void nrf24_transmit_payload(char *payload) {
+  nrf24_write_reg(0xE1, payload, 0);    // clear tx buffer
+  nrf24_write_reg(0xA0, payload, 5);    // load tx bugger
+
+  _delay_ms(10);
+  PORTB |= _BV(NRF24_CE);
+  _delay_us(20);
+  PORTB &= ~_BV(NRF24_CE);
+  _delay_ms(10);
+}
+
+void nrf24_reset_irq() {
+  _delay_us(10);
+  NRF24_PORT &= ~_BV(NRF24_CSN);
+  _delay_us(10);
+  spi_write_byte(NRF24_W_REG + NRF24_STATUS);
+  _delay_us(10);
+  NRF24_PORT |= _BV(NRF24_CSN);
 }
