@@ -2,6 +2,8 @@
 #include "hw_uart.h"
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
+
 #include <stdio.h>
 #include <string.h>
 #include "nrf24l01.h"
@@ -10,34 +12,43 @@
 
 char val[5];
 char debug[100];
-char to_address[5] = { 0x12, 0x12, 0x12, 0x12, 0x12 };
+char address[5] = { 0x12, 0x12, 0x12, 0x12, 0x12 };
+
+volatile bool rf_interrupt = false;
+
 
 void main() {
   hw_uart_init();
+  sei();
   nRF24L01 *rf = setup_rf();
+
+  nRF24L01_listen(rf, 0, address);
+  uint8_t addr[5];
+  nRF24L01_read_register(rf, CONFIG, addr, 1);
 
   nRF24L01_read_register(rf, 0x07, val, 1);
   memset(debug, 0, sizeof(debug));
   sprintf(debug, "Startup Status: %02x %02x %02x %02x %02x\r\n", val[0], val[1], val[2], val[3], val[4]);
   hw_uart_putstring(debug);
 
-  while(1) {
+  while (true) {
+    nRF24L01_read_register(rf, 0x07, val, 1);
 
-    nRF24L01Message msg;
-    memcpy(msg.data, "ON", 3);
-    msg.length = strlen((char *)msg.data) + 1;
-    nRF24L01_transmit(rf, to_address, &msg);
-    _delay_ms(500);
+    if(val[0] & _BV(6)) {
+      memset(debug, 0, sizeof(debug));
+      sprintf(debug, "Status: %02x %02x %02x %02x %02x\r\n", val[0], val[1], val[2], val[3], val[4]);
+      hw_uart_putstring(debug);
 
+      while (nRF24L01_data_received(rf)) {
+        nRF24L01Message msg;
+        nRF24L01_read_received_data(rf, &msg);
+        hw_uart_putstring((char *)msg.data);
+      }
 
-    val[0] = nRF24L01_transmit_success(rf);
+      nRF24L01_listen(rf, 0, address);
+    }
 
-    memset(debug, 0, sizeof(debug));
-    sprintf(debug, "%d %02x %02x %02x %02x\r\n", val[0], val[1], val[2], val[3], val[4]);
-    hw_uart_putstring(debug);
-
-    _delay_ms(1000);
-
+    _delay_ms(100);
 
   }
 }
@@ -55,8 +66,8 @@ nRF24L01 *setup_rf(void) {
     rf->miso.port = &PORTB;
     rf->miso.pin = PB4;
     // interrupt on falling edge of INT0 (PD2)
-    //EICRA |= _BV(ISC01);
-    //EIMSK |= _BV(INT0);
+    EICRA |= _BV(ISC01);
+    EIMSK |= _BV(INT0);
     nRF24L01_begin(rf);
     return rf;
 }
